@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filmar</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/5930/5930234.png">
+
+    <!-- Vime Video Player CSS (Garantili Unpkg CDN) -->
+    <link rel="stylesheet" href="https://unpkg.com/@vime/core@^5/themes/default.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@vime/core@^5/themes/light.css" />
+
+    <!-- Vime Video Player JS -->
+    <script type="module" src="https://unpkg.com/@vime/core@^5/dist/vime/vime.esm.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0a0c10;
+            --card-bg: #131720;
+            --primary: #e50914;
+            --text-main: #ffffff;
+            --text-muted: #8c96a6;
+            --nav-bg: rgba(18, 22, 31, 0.85);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding-bottom: 50px;
+            overflow-x: hidden;
+        }
+
+        /* Üst Navigasyon Barı (Header) */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 50px;
+            background: var(--nav-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Tür Filtreleme Menüsü */
+        .nav-links {
+            display: flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .nav-item {
+            padding: 8px 18px;
+            border-radius: 20px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: #fff;
+            background: var(--primary);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 16px 8px 36px;
+            border-radius: 20px;
+            color: #fff;
+            font-size: 0.85rem;
+            outline: none;
+            width: 200px;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            width: 260px;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Ana İçerik Alanı */
+        main {
+            max-width: 1400px;
+            margin: 30px auto 0 auto;
+            padding: 0 30px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        /* Film Kartları Izgarası (Grid) */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.6);
+        }
+
+        .poster-container {
+            width: 100%;
+            height: 270px;
+            position: relative;
+        }
+
+        .poster {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Hover Play Overlay */
+        .card-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .card:hover .card-overlay {
+            opacity: 1;
+        }
+
+        .play-btn-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(225, 9, 20, 0.5);
+        }
+
+        .card-info {
+            padding: 12px;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+
+        .card-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .no-result {
+            text-align: center;
+            padding: 50px;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+            font-size: 1.1rem;
+        }
+
+        /* Modal Stilleri */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 90%;
+            max-width: 1000px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+            background: #000;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.8rem;
+            color: #fff;
+            cursor: pointer;
+            z-index: 1010;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .close-btn:hover { background: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <!-- Üst Navigasyon -->
+    <header>
+        <div class="logo">
+            <span>🎬</span> FILMAR
+        </div>
+
+        <!-- Tür Filtreleme Butonları -->
+        <nav class="nav-links">
+            <a class="nav-item active" onclick="turFiltrele('Tümü', this)">Tümü</a>
+            <a class="nav-item" onclick="turFiltrele('Aksiyon', this)">Aksiyon</a>
+            <a class="nav-item" onclick="turFiltrele('Bilim Kurgu', this)">Bilim Kurgu</a>
+            <a class="nav-item" onclick="turFiltrele('Macera', this)">Macera</a>
+        </nav>
+
+        <div class="nav-actions">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Film ara..." oninput="aramaYap()">
+            </div>
+        </div>
+    </header>
+
+    <!-- İçerik Alanı -->
+        <main>
+            <div class="section-header">
+                <h2 class="section-title" id="sectionTitle">Tüm Filmler</h2>
+            </div>
+            <div class="cards-grid" id="filmGrid"></div>
+
+            <!-- İletişim Notu -->
+            <div style="text-align: center; margin-top: 40px; color: var(--text-muted); font-size: 0.85rem; opacity: 0.7;">
+                İletişim için: <a href="mailto:oyunsaati721@gmail.com" style="color: inherit; text-decoration: underline;">oyunsaati721@gmail.com</a>
+            </div>
+        </main>
+
+    <!-- Video Modal -->
+    <div class="modal" id="videoModal">
+        <span class="close-btn" onclick="videoKapat()">&times;</span>
+        <div class="video-wrapper" id="playerContainer">
+            <!-- Vime Player JS ile dinamik eklenecek -->
+        </div>
+    </div>
+
+    <script>
+    const filmler = [
+        {
+            id: 1,
+            isim: "Thunderbolts*",
+            tur: "Aksiyon",
+            kapak: "https://m.media-amazon.com/images/S/pv-target-images/ed2ee2c7238d6c016414674411d494979124fad5f787aa8c71e756d1361ceab9.jpg",
+            mp4Link: "https://s9.gelsistirire.top/d/yinfaispsk3rtzj5btwuhxe6ljcoxdnfoo3c2dqu3xvqa7utscu236ig6ogz47ca7pz5kyrq/Thunderbolts%202025%20WEB-DL%201080p%20DUAL.mp4"
+        },
+        {
+            id: 2,
+            isim: "Doktor Strange Çoklu Evren Çılgınlığında",
+            tur: "Aksiyon",
+            kapak: "https://b6s54eznn8xq.merlincdn.net/Uploads/Films/doktor-strange-coklu-evren-cilginliginda-202248234144.jpg",
+            mp4Link: "https://s9.gelsistirire.top/d/yinaqispsk3rtzj5btwujrutjl7kwtnndj54ril2qucmvp7rzd6mzxr3pdwt4ngtj4qqdofw/Doctor%20Strange%20in%20the%20Multiverse%20of%20Madness%202022%20IWEB-DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:39,
+          isim:"Black Panther",
+          altMetin:"Kara Panter",
+          tur:"Aksiyon",
+          kapak:"https://play-lh.googleusercontent.com/pSgwFrp-tMMwk_iSO188jvg2VILhq1l3EICZKThh72bi8J8ozzD4JjMcd4fVVHMcoimq",
+          mp4Link:"https://s9.gelsistirire.top/d/yinbyakosk3rtzj5apwu7xeni2xehm2fh5p5xymtcz37jqzo2fqm2fwcvbadcrni5dsdmq5q/Black%20Panther%202018%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id: 3,
+          isim: "Black Panther Yaşasın Wakanda",
+          tur: "Aksiyon",
+          altMetin:"Black Panther Wakanda Forever",
+          kapak: "https://play-lh.googleusercontent.com/S9bcH4lgdBKJtRjbV1X_ryVrQVA1p4EkN4EEdo20WI7Io5d_8U6oCtWII21J8CdAxsMSKtyRp72wXHXxFzc",
+          mp4Link: "https://s9.gelsistirire.top/d/yinfod2psk3rtzj5chwrbsmediknq5gu7xv56g2x3ji5npj4anhrbzcqdf7z5ct32jwareuh/Black%20Panther%20Wakanda%20Forever%202022%20IWEB-DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:18,
+          isim: "X-Men",
+          tur: "Aksiyon",
+          kapak: "https://www.originalfilmart.com/cdn/shop/products/1_8b9a73e7-a80b-41c8-8850-341314bcfaf3_spo_5000x.jpg?v=1551895680",
+          mp4Link: "https://s9.gelsistirire.top/d/yine4n2psk3rtzj5b7wqjxw7cql5s754kloqf2xicpguk32qhgypqvrjqcympiclzyq4az5y/X%20Men%202000%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id: 5,
+          isim: "X2",
+          tur: "Aksiyon",
+          kapak: "https://m.media-amazon.com/images/S/pv-target-images/aaa87940044b641f214a58bd82c2dad4e1ab122f76d411a8fbcad78e0e1ff912.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yingwa2psk3rtzj5b3wrtq4ecdjcx6oh6n6xrizuwx4ompdclt3nlr33p6nw6yvncxyudfd6/X2%202003%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:6,
+          isim: "Shang-Chi ve 10 Halka Efsanesi",
+          tur: "Aksiyon",
+          altMetin:"shang chi and the legend of the ten rings",
+          kapak: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS8ND9ONlOZZLfkXGtX3wEtRTInugGt8YSi-QE-qfe9aPUV_r9qrveEkmbo&s=10",
+          mp4Link: "https://s9.gelsistirire.top/d/yinpjgkjsk3rtzj5hxwrvh4qk2bqkqz3qsaobfg5zrrzhetztsjmsl3rxodhmzaqdwzg4c3q/Shang%20Chi%20and%20the%20Legend%20of%20the%20Ten%20Rings%202021%20UBluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:7,
+          isim: "Yenilmezler",
+          altMetin:"avengers",
+          tur: "Aksiyon",
+          kapak: "https://upload.wikimedia.org/wikipedia/tr/f/f9/TheAvengers2012Poster.jpg?utm_source=tr.wikipedia.org&utm_campaign=index&utm_content=original",
+          mp4Link: "https://s9.gelsistirire.top/d/yinh3gsosk3rtzj5bpwr3gu7lkyunm5qelj2pzd53c27vib2s2wnrcu6a6h6ju5emnjbq7tn/The%20Avengers%202012%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:8,
+          isim: "Yenilmezler Ultron Çağı",
+          altMetin:"avengers age of ultron",
+          tur: "Aksiyon",
+          kapak: "https://thumb.wikimedia.org/wikipedia/tr/thumb/1/1d/Yenilmezler-_Ultron_%C3%87a%C4%9F%C4%B1.jpg/250px-Yenilmezler-_Ultron_%C3%87a%C4%9F%C4%B1.jpg?utm_source=tr.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+          mp4Link: "https://s9.gelsistirire.top/d/yinkkucpsk3rtzj5bxwqhxekj4yshxvuxctbnxdmjw5tuxohl4liku3wgcxbxo6k3bbkeynd/Avengers%20Age%20of%20Ultron%202015%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:9,
+          isim: "Avengers Sonsuzluk Savaşı",
+          altMetin:"avengers infinity war",
+          tur: "Aksiyon",
+          kapak: "https://play-lh.googleusercontent.com/Z8s9cK7o4ixOC96_oynKbiIQulSFC8N119eLRI4i7SXRBTrEHo71i8N3uiqbE_6vV0gQOnWkGnxjh3dkKjM=w240-h480-rw",
+          mp4Link: "https://s9.gelsistirire.top/d/yinjtjkpsk3rtzj5cxwrfvw7inijw4wx22tgjq6kh7gt7j3wcnwz2lpx4lpenzhpjduxlp6g/Avengers%20Infinity%20War%202018%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:10,
+          isim: "Avengers Endgame",
+          tur: "Aksiyon",
+          kapak: "https://image.tmdb.org/t/p/original/zx1uMVXSJrzYCA8KTpmeEBqBx66.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yinmwtcpsk3rtzj5bxwupsoslpmci5gd3sh46bc5ibsmvmgsbeikpuouz4evos4v2osifwdp/Avengers%20Endgame%202019%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:11,
+          isim: "Oyuncak Hikayesi",
+          altMetin:"toy story",
+          tur: "Macera",
+          kapak: "https://static.boxofficeturkiye.com/movie/poster/300x429/12/1999712-76573714.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yinjbxspsk3rtzj5cxwqlq4qdp2xzkex4npuw5m7i7pbdfecmidzdq4gnkbuutwyyterrtih/Toy%20Story%201995%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:12,
+          isim: "Oyuncak Hikayesi 2",
+          altMetin:"toy story 2",
+          tur: "Macera",
+          kapak: "https://image.tmdb.org/t/p/original/df437IDV5xku4mYmvOCBMIqLXzj.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yinpvksosk3rtzj5a3wrdxubkd7wkhoi63twvq4b2avkp7moc5o45ikzlh6vxdxyjuiahfmj/Toy%20Story%202%201999%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:13,
+          isim: "Oyuncak Hikayesi 3",
+          altMetin:"toy story 3",
+          tur:  "Macera",
+          kapak: "https://upload.wikimedia.org/wikipedia/tr/c/c8/Toy_story_3.jpg?utm_source=tr.wikipedia.org&utm_campaign=index&utm_content=original",
+          mp4Link: "https://s9.gelsistirire.top/d/yinfhmkosk3rtzj5a3wqfxwvjvlkvjamnpafv5epls36y7sigqwkyrdizombjyxzou6zlc3r/Toy%20Story%203%202010%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:14,
+          isim: "Oyuncak Hikayesi 4",
+          altMetin:"toy story 4",
+          tur: "Macera",
+          kapak: "https://img-s1.onedio.com/id-69a55f03730f0302b181765a/rev-0/w-620/f-jpg/s-826bd72c2acaffa249b734624344c77d30ac9665.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yingzzsosk3rtzj5axwrlvuxipum5vm6xttdi5qxu3kq7i43eetsgxkh7valt4mpuigw5peu/Toy%20Story%204%202019%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:15,
+          isim: "Oyuncak Hikayesi 5",
+          altMetin:"toy story 5",
+          tur: "Macera",
+          kapak: "https://b6s54eznn8xq.merlincdn.net/Uploads/Films/oyuncak-hikayesi-5-2026318114214b52060b83a8a478a9b25531868971372.png",
+          mp4Link: "https://s9.gelsistirire.top/d/yinn76kpsk3rtzj5cpwrfwumjhm2yvh6y7vpfjfkluksptjhyuwljpu446ql7ojc3iob2v4m/ToyStory5-TRDUAL-tt29355505.mp4"
+        },
+        {
+          id:16,
+          isim: "Ters Yüz",
+          altMetin:"inside out",
+          tur: "Macera",
+          kapak: "https://upload.wikimedia.org/wikipedia/tr/2/29/Ters_Y%C3%BCz_-_afi%C5%9F.jpg?utm_source=tr.wikipedia.org&utm_campaign=index&utm_content=original",
+          mp4Link: "https://s9.gelsistirire.top/d/yindfqcosk3rtzj5atwqprekcxhvea5x2f7ftivfhr257ao2lpjsebdvxhc3k4wiczlmzder/Inside%20Out%202015%20WEB%20DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:17,
+          isim: "Ters Yüz 2",
+          altMetin:"inside out 2",
+          tur: "Macera",
+          kapak: "https://play-lh.googleusercontent.com/M-dwSE0Fg0iucsooSDFv1qNXVFCdAsHQ7yVKPon9zdeNvQOX57ZE-zxW7e8ZBroVlMdSPLEAIrUvyHTDGZE",
+          mp4Link: "https://s9.gelsistirire.top/d/yinbqucpsk3rtzj5bxwqhqurj665ujp7nno74ighdgmz735mojyk7ei323g6qqlllgjzwaxy/Inside%20Out%202%202024%20WEB%20DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:19,
+          isim: "Örümcek-Adam: Eve Dönüş",
+          altMetin:"spider man homecoming",
+          tur: "Aksiyon",
+          kapak: "https://mediacms01.digiturkplay.com/dzdy_web_turksat/PT0000141539/spider-man-homecoming_220x286_raw.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yinbhvcpsk3rtzj5clwrxteokyfdt65uzxgfgmqfco3rjfq4w7anjanq7ovta5wu6hrfp6hc/Spider%20Man%20Homecoming%202017%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:20,
+          isim: "Örümcek-Adam: Evden Uzakta",
+          altMetin:"spider man far from home",
+          tur: "Aksiyon",
+          kapak: "https://play-lh.googleusercontent.com/gde7aqG2Fwx1FtfNgRkygEXBMMOXsTf3CkBUNsjGXsDj7Gfdj39A0VolLqO8qXkljO-q0z7yGBashAiwHWZd",
+          mp4Link: "https://s9.gelsistirire.top/d/yino3vkpsk3rtzj5clwqzregczonro5pzosxgoypmq73wmgi45m6pouge2j6yl7nezuexgbv/Spider%20Man%20Far%20from%20Home%202019%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:21,
+          isim: "Örümcek-Adam: Eve Dönüş Yok",
+          altMetin:"spider man no way home",
+          tur: "Aksiyon",
+          kapak: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3k6IoTz3Phs0A1CRphUCEz6EluslIfn1v0f1Ud9FQj_yV6PlJMcGT8FU&s=10",
+          mp4Link: "https://s9.gelsistirire.top/d/yinbrr2psk3rtzj5cpwu5f4oc6gwcokcymosxkwf3z7yjmgnw72alvf2s36usnvajztvfplu/Spider%20Man%20No%20Way%20Home%202021%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:46,
+          isim:"Örümcek-Adam Yepyeni Bir Gün",
+          altMetin:"spider man brand new day",
+          tur:"Aksiyon",
+          kapak:"https://sm.ign.com/ign_tr/screenshot/default/orumcek-adam-yepyenibirgun-poster2_8p9y.jpg",
+          mp4Link:"https://s9.gelsistirire.top/d/yinb5hkpsk3rtzj5c3wr3furjlerfx7smi4xyywpbxyzkffjp2wuyjx2skjxj735d7k454rr/Spider%20Man%20Brand%20New%20Day%202026%201080p%20AMZN%20WEB%20DL%20DUAL.mp4"
+        },
+        {
+          id:22,
+          isim: "Örümcek-Adam",
+          altMetin:"spider man",
+          tur: "Aksiyon",
+          kapak: "https://thumb.wikimedia.org/wikipedia/tr/thumb/8/8e/Sm3poster09.jpg/250px-Sm3poster09.jpg?utm_source=tr.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+          mp4Link: "https://s9.gelsistirire.top/d/yinitq2psk3rtzj5cpwrrrerclph26azmgwogn4p65penuwguye7rdszmlqib7tbvouapngk/Spider%20Man%202002%20WEB%20DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:23,
+          isim: "Örümcek-Adam 2",
+          altMetin:"spider man 2",
+          tur: "Aksiyon",
+          kapak: "https://cocuklasinema.com/assets/admin/images/movie/tz0wspider_man2.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yinanvcpsk3rtzj5clwq7tmxc7k2xcn2wy5s3nlvdytaaxzv2ej6ukxznrvrpesaqz4z27jv/Spider-Man%202%202004%20WEB-DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:24,
+          isim: "Örümcek-Adam 3",
+          altMetin:"spider man 3",
+          tur: "Aksiyon",
+          kapak: "https://i.redd.it/sopbiib4rv3d1.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yinofvkpsk3rtzj5clwujguij4dwdlb3vqlvs6uvrj2s324y56p2gmk7fvj2m4nohasmwpqw/Spider%20Man%203%202007%20WEB%20DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:25,
+          isim: "İnanılmaz Örümcek-Adam",
+          altMetin:"the amaizing spider man",
+          tur: "Aksiyon",
+          kapak: "https://m.media-amazon.com/images/S/pv-target-images/a36cb34898a05e4d27dfaed7dfe3135ccea2565d6fb8f9fd98dff913c131f529.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yini3jkpsk3rtzj5cxwr7hu7jvjtuxwvuibhjwk23anxeldmy2afqpdtqo4mij4dmbnnfio2/The%20Amazing%20Spider%20Man%202012%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:26,
+          isim: "İnanılmaz Örümcek-Adam 2",
+          altMetin:"the amaizing spider man 2",
+          tur: "Aksiyon",
+          kapak: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQrrlMd7VovxQkMWrOW2Fk-eEa0DtI1TAcvr4ajAzLYB1p73MEVKGTtcxuo&s=10",
+          mp4Link: "https://s9.gelsistirire.top/d/yinjlxspsk3rtzj5cxwqjsucj3jmmo4mtd2defl7oj72elwobb5oc5jtp235m5au7dnksmgv/The%20Amazing%20Spider%20Man%202%202014%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:27,
+          isim: "Kung Fu Panda",
+          tur: "Aksiyon",
+          kapak: "https://thumb.wikimedia.org/wikipedia/tr/thumb/7/76/Kungfupanda.jpg/250px-Kungfupanda.jpg?utm_source=tr.wikipedia.org&utm_campaign=parser&utm_content=thumbnail",
+          mp4Link: "https://s9.gelsistirire.top/d/yinhaukpsk3rtzj5bxwq7suqc3ttflj46crdgu2lw65sx3v2gjkclv77d7hqcw2ahj4is3lv/Kung%20Fu%20Panda%202008%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:28,
+          isim: "Kung Fu Panda 2",
+          tur: "Aksiyon",
+          kapak: "https://cocuklasinema.com/assets/admin/images/movie/0-kung-fu-panda2.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yinmsmspsk3rtzj5b7wq7x6sk44pmfko6ypmaohfh5jyadtsyd4wo4miwebwx3x2j3rewuv2/Kung%20Fu%20Panda%202%202011%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:29,
+          isim: "Kung Fu Panda 3",
+          tur: "Aksiyon",
+          kapak: "https://www.cocukicinicerik.com/Content/userfiles/image/kung3.jpg",
+          mp4Link: "https://s9.gelsistirire.top/d/yinig3sosk3rtzj5h7wulrerj4kyx6el2sihymbqjzjcbjldvpthc2qyxemarqmqmvwwcgyi/Kung%20Fu%20Panda%203%202016%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:30,
+          isim: "Kung Fu Panda 4",
+          tur: "Aksiyon",
+          kapak: "https://play-lh.googleusercontent.com/07yB9cmTtvqyFyasZ-YvKNe-_evxKNqcVFPPMLrgc2H6ZS2UsxO0J3Sn79Uf2sv_Sjv_AWsNk7Lw6WhgdLY",
+          mp4Link: "https://s9.gelsistirire.top/d/yinpsxspsk3rtzj5btwulhmalmfqkfartqb6or7fgh7x4yv7s46ensq66iq6rhqw5yp5my7i/Kung%20Fu%20Panda%204%202024%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:31,
+          isim:"Deadpool",
+          tur:"Aksiyon",
+          kapak:"https://play-lh.googleusercontent.com/vdC-3zQ3K1133Qvcl-71O9ulLeu1IsehUWc_2phxEFfy3lo27R3LOa2rbr3xK5YUMY1s",
+          mp4Link:"https://s9.gelsistirire.top/d/yinddvcpsk3rtzj5clwrvq6sjuc3fineyzjfjqoy3enwgvzbkskdbkszvxebw7xjchfkcils/Deadpool%202016%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:32,
+          isim:"Deadpool 2",
+          tur:"Aksiyon",
+          kapak:"https://m.media-amazon.com/images/S/pv-target-images/8964c1aac1246dc1e90ac66fef424b3b3e0fc6dfb590708651591ede87b64a07.jpg",
+          mp4Link:"https://s9.gelsistirire.top/d/yinj5hkosk3rtzj5bpwulxo6cjk5j72kk7ko5lbmdxakfgfi7orpjxgzppegkm3x2oqvev2n/Deadpool%202%202018%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:33,
+          isim:"Deadpool & Wolverine",
+          tur:"Aksiyon",
+          kapak:"https://m.media-amazon.com/images/S/pv-target-images/dd6fb66997dd4cb5606b587bb255d2cd2cec20ecbd11852a8f6b07a1358d09a1.jpg",
+          mp4Link:"https://s9.gelsistirire.top/d/yinom22psk3rtzj5bpwqfgmti3z6g6tcz6kur7s2mqpogi27btwwogkh6zfbppddxd4jid3b/Deadpool%20and%20Wolverine%202024%20WEB%20DL%201080p%20DUAL.mp4"
+        },
+        {
+          id: 4,
+          isim: "İlk Yenilmez Kaptan Amerika",
+          tur: "Aksiyon",
+          altMetin:"Captain America The First Avenger",
+          kapak: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSQnGTNZUbPOEIEXjtKMoHASdI0sH7mhSr7fGEa6QyC9g&s=10",
+          mp4Link: "https://s9.gelsistirire.top/d/yingdm2isk3rtzj5ftwq7h6qklfmy5f4w3lku47z7xvipmieypnjmjwzffzizwowo743l5r7/Captain%20America%20The%20First%20Avenger%202011%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:34,
+          isim:"Kaptan Amerika: Kış Askeri",
+          altMetin:"captain america the winter solider",
+          tur:"Aksiyon",
+          kapak:"https://upload.wikimedia.org/wikipedia/tr/e/e8/Captain_America_The_Winter_Soldier.jpg?utm_source=tr.wikipedia.org&utm_campaign=index&utm_content=original",
+          mp4Link:"https://s9.gelsistirire.top/d/yinhio2psk3rtzj5b3wqntgviz7y7wvpzmgy6bgzercn3ujbgtideenofz4p7xzhpywrcsjy/Captain%20America%20The%20Winter%20Soldier%202014%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:35,
+          isim:"Kaptan Amerika: Kahramanların Savaşı",
+          altMetin:"captain america civil war",
+          tur: "Aksiyon",
+          kapak:"https://upload.wikimedia.org/wikipedia/tr/f/f5/Kaptan_Amerika_Kahramanlar%C4%B1n_Sava%C5%9F%C4%B1.jpg?utm_source=tr.wikipedia.org&utm_campaign=index&utm_content=original",
+          mp4Link: "https://s9.gelsistirire.top/d/yinp2jcosk3rtzj5ahwrxxwtkmzesovtx23ybg3owcifdajw2scb5zuyb4jllccy5ewmk4yp/Captain%20America%20Civil%20War%202016%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:36,
+          isim:"Kaptan Amerika: Cesur Yeni Dünya",
+          altMetin:"captain america brave new world",
+          tur:"Aksiyon",
+          kapak:"https://lumiere-a.akamaihd.net/v1/images/image_318f72b8.jpeg?region=0,0,540,810",
+          mp4Link:"https://s5.gelsistirire.top/d/zyngyccpsk3rtzj5b3wrzsuljjfvth5ezzmdy6a5ovwvlpnlq36trhfr25hk3rgaq2kegrnb/Captain%20America%20Brave%20New%20World%202025%20WEB%20DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:37,
+          isim: "Superman",
+          tur:"Aksiyon",
+          kapak:"https://m.media-amazon.com/images/S/pv-target-images/c077277fb805649bb6785aabe2472a706b8e51a8dd629533a95cac955778d65a.jpg",
+          mp4Link:"https://s9.gelsistirire.top/d/yinicokpsk3rtzj5b7wupq4ajg5cugkfq37hnhskg4rpthwb5tgocqw3pfwt7zybsdyeh2te/Superman%202025%20WEB%20DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:38,
+          isim:"Supergirl",
+          tur:"Aksiyon",
+          kapak:"https://m.media-amazon.com/images/S/pv-target-images/be1e41aa37994b3bee0dc0f6c064de6f119cf080331ed92c439e2a906cb9ce49.jpg",
+          mp4Link:"https://s9.gelsistirire.top/d/yincbyspsk3rtzj5cdwrbtg6dk3fkxfmxq3z3dnupmnau5q3wp6bjuz4rt2kwjra53peh7fo/Supergirl%202026%201080p%20AMZN%20WEB%20TRDUAL.mp4"
+        },
+        {
+          id:40,
+          isim:"Çelik Adam",
+          altMetin:"Superman Man Of Steel",
+          tur:"Aksiyon",
+          kapak:"https://play-lh.googleusercontent.com/j_QM44Qm_VyQMyzoUn-cYGxmd1FaUmZjKG2mXiJYRPeJKRwzksessVvOUJYASdXGJNo4NNrIlVmlnuWDrhY",
+          mp4Link:"https://s9.gelsistirire.top/d/yind7n2psk3rtzj5ctwqnv4givo3hmhkvhfe6jywvpng2msmxsx6sczdl6ogoimvnynmcbgp/Man%20of%20Steel%202013%20Bluray%201080p%20DUAL.mp4",
+        },
+        {
+          id:41,
+          isim:"Batman Başlıyor",
+          altMetin:"Batman Begins",
+          tur:"Aksiyon",
+          kapak:"https://m.media-amazon.com/images/S/pv-target-images/862dbcc732d1a85387efeb1fce1a9d9d84152af2a7a50731de7a486ac0f8655b.jpg",
+          mp4Link:"https://s9.gelsistirire.top/d/yinnngkpsk3rtzj5hlwuhq4miqngii3mkgpj3hnx57lxd4s4v2w4jon4zavxwdurcdfoczu2/Batman%20Begins%202005%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:42,
+          isim:"Kara Şövalye",
+          altMetin:"batman the dark knight",
+          tur:"Aksiyon",
+          kapak:"https://play-lh.googleusercontent.com/Z9Gtkzdn0e-ulczlpv7Urh_v84a63cDIYnY11LcwO_fxBLD_NY4QwAAEn_0F3gzxXA6T6SU6uatmKW2BwnI",
+          mp4Link:"https://s9.gelsistirire.top/d/yinmz7sosk3rtzj5atwr7v4okl3yetdnj4cwfdw2n33ikjzn3jfkvxxoo5igqc5te662x47v/TheDarkKnight-2008-TRDUAL%20mp4.mp4"
+        },
+        {
+          id:43,
+          isim:"Kara Şövalye Yükseliyor",
+          altMetin:"batman the dark knight rises",
+          tur:"Aksiyon",
+          kapak:"https://play-lh.googleusercontent.com/2fAcXK8ls-O6kfSaqZ7jsK3OFvc17e1muTC3kg_GWajMxLI3YV5Q_9De8JbcWu8rhI-eRYHLX16Gi_A2RA",
+          mp4Link:"https://s9.gelsistirire.top/d/yina4kspsk3rtzj5b7wqlrecjoppxm2457naplovcglggdseympnaxrvcdhkvxmvhdduoice/The%20Dark%20Knight%20Rises%202012%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:44,
+          isim:"Süper Mario Kardeşler Filmi",
+          altMetin:"The Super Mario Bros. Movie",
+          tur:"Macera",
+          kapak:"https://ortakoltuk.com/wp-content/uploads/2023/04/super-mario-kardesler-9.webp",
+          mp4Link:"https://s9.gelsistirire.top/d/ying2n2psk3rtzj5b7wq5work4bf6xxg6jgbmkuid5vo4kbhsbpd2a35clkn5kbagf3rl4wv/The%20Super%20Mario%20Bros%20Movie%202023%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:45,
+          isim:"Süper Mario Galaksi Filmi",
+          altMetin:"the super mario galaxy movie",
+          tur:"Macera",
+          kapak:"https://m.media-amazon.com/images/S/pv-target-images/3a81b0442f417a08cd6453354ce582b7a0f6d0ec321c9f614b17b371d7b5ca97._UR2000,3000_.png",
+          mp4Link:"https://s9.gelsistirire.top/d/yinov7kosk3rtzj5atwqzw67im5u36iw6ricv2kozobh6gajagehmldqoiejwxyjnztihwj2/The%20Super%20Mario%20Galaxy%20Movie%202026%20WEB%20DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:47,
+          isim:"Kirpi Sonic",
+          altMetin:"sonic the hedgehog",
+          tur:"Aksiyon",
+          kapak:"https://static.boxofficeturkiye.com/movie/poster/300x429/64/2014064-262385311.jpg",
+          mp4Link:"https://s9.gelsistirire.top/d/yinn5s2psk3rtzj5clwujw4gjemai22gohinzwwa7ybhlpminvr67i3amox3j65ict6h2wn5/Sonic%20the%20Hedgehog%202020%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:48,
+          isim:"Kirpi Sonic 2",
+          altMetin:"sonic the hedgehog 2",
+          tur:"Aksiyon",
+          kapak:"https://upload.wikimedia.org/wikipedia/tr/3/3e/Kirpi_Sonic_2_afi%C5%9F.webp?utm_source=tr.wikipedia.org&utm_campaign=index&utm_content=original",
+          mp4Link:"https://s8.gelsistirire.top/d/ymnn3mspsk3rtzj5ctwqnveuktcasddwhj2rcinfgiauh3vgimsd4bobj4tl6cg677k33vwq/SonictheHedgehog-2-2022-BLURAY-TRDUAL%20mp4.mp4"
+        },
+        {
+          id:49,
+          isim:"Kirpi Sonic 3",
+          altMetin:"sonic the hedgehog 3",
+          tur:"Aksiyon",
+          kapak:"https://kureansiklopedi.com/_next/image?url=https%3A%2F%2Fcdn.t3pedia.org%2Fmedia%2Fuploads%2F2025%2F07%2F14%2FLQ6ibMtBz7RLLQtYvSXTacd9OxcTFbbb.jpeg&w=1280&q=75",
+          mp4Link:"https://s9.gelsistirire.top/d/yinakjkpsk3rtzj5btwq5xevkzfllconcni22vao6wxuznkjtuyv6ddxqbqipmzhe46naahf/Sonic%20the%20Hedgehog%203%202024%20WEB-DL%201080p%20DUAL.mp4"
+        },
+        {
+          id:50,
+          isim:"Demir Adam",
+          altMetin:"iron man",
+          tur:"Aksiyon",
+          kapak:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTJximqXp-feqSCxaoODkAQBSm8rPxMf2goKjlb-aZmEykbLKzLbX5p7oo&s=10",
+          mp4Link:"https://s9.gelsistirire.top/d/yinjjbspsk3rtzj5c7wqpv4tcw73myldzt2joxfleha6qkg4thrrazjckloyhswgtkbd2yp3/Iron%20Man%202008%20Bluray%201080p%20DUAL.mp4",
+        },
+        {
+          id:51,
+          isim:"Demir Adam 2",
+          altMetin:"iron man 2",
+          tur:"Aksiyon",
+          kapak:"https://www.sinefil.com/cdn-a1-p/movie/0019/20/thumb_1819512_movie_default.jpeg",
+          mp4Link:"https://s9.gelsistirire.top/d/yinlhqspsk3rtzj5cpwubwwuk47oqo3vpru4kbidzk3hp4qo2vod4crpwkx7aqeqnwqvufhi/Iron%20Man%202%202010%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:52,
+          isim:"Demir Adam 3",
+          altMetin:"iron man 3",
+          tur:"Aksiyon",
+          kapak:"https://sinefabrik.wordpress.com/wp-content/uploads/2013/03/iron-man-3-2.jpg?w=584",
+          mp4Link:"https://s9.gelsistirire.top/d/yinlejkosk3rtzj5ahwqjhewibcvrdytgga4keastor7dcwsewvz3lyivrejs2vmsnv5gxoe/Iron%20Man%203%202013%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:53,
+          isim:"Olağanüstü Hulk",
+          altMetin:"the incredible hulk",
+          tur:"Aksiyon",
+          kapak:"https://play-lh.googleusercontent.com/LwVBDlYTCr0jTcEze_eiwJurzYflq31iGyl5layCFFc4z1JiUyjWPTNnDiEBTDUxbu3Amj69BunFGRc_Ww",
+          mp4Link:"https://s9.gelsistirire.top/d/yine4ncpsk3rtzj5b7wq5q6ujnakfrpqg5zpfmjl27smax5azjl76ipwfv4ou7yrotc5z5ts/The%20Incredible%20Hulk%202008%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:54,
+          isim:"Thor",
+          tur:"Aksiyon",
+          kapak:"https://tr.web.img3.acsta.net/medias/nmedia/18/77/96/35/19701450.jpg",
+          mp4Link:"https://s9.gelsistirire.top/d/yinib2cpsk3rtzj5cdwrlxmmkewzz5zhuoalslhqx5tfxyradvrmsoappakasycpyhmjendb/Thor%202011%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:55,
+          isim:"Thor: Karanlık Dünya",
+          altMetin:"thor 2 thor the dark world thor karanlık dünya",
+          tur:"Aksiyon",
+          kapak:"https://img5.allocine.fr/acmedia/medias/nmedia/18/99/36/49/20613739.jpg",
+          mp4Link:"https://s9.gelsistirire.top/d/yincp7kpsk3rtzj5cpwqnwusks5fy2oheurzsgmwayh4sdo33nmbwhamz24pzum7pteutcqz/Thor%20The%20Dark%20World%202013%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:56,
+          isim:"Thor: Ragnarok",
+          altMetin:"thor 3 thor ragnarok",
+          tur:"Aksiyon",
+          kapak:"https://play-lh.googleusercontent.com/EJEgiTGk1fuYz8Rx0LpSYRpEZLj0HHBLhagV4mAXHFiK_vqabZsxCtIGSjZHygDELkaU",
+          mp4Link:"https://s9.gelsistirire.top/d/yinkfwspsk3rtzj5cxwqbwenjot2whipjekoctb7hn365tk7aoiyy4uvoeybgjjh5rn3csbz/Thor%20Ragnarok%202017%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:57,
+          isim:"Thor: Aşk ve Gök Gürültüsü",
+          altMetin:"thor 4 thor love and thunder thor aşk ve gök gürültüsü",
+          tur:"Aksiyon",
+          kapak:"https://lumiere-a.akamaihd.net/v1/images/image_177bf3c1.jpeg?region=0,0,540,810",
+          mp4Link:"https://s9.gelsistirire.top/d/yinagzspsk3rtzj5bpwrfhgtlojkzxm6c6hrnfq576aadaofahzjtfx3f24isp2mjbn5gewh/ThorLoveandThunder-2022-WEBDL-TRDUAL%20mp4.mp4"
+        },
+        {
+          id:58,
+          isim:"Galaksinin Koruyucuları",
+          altMetin:"guardians of the galaxy",
+          tur:"Aksiyon",
+          kapak:"https://img-s2.onedio.com/id-6985e814285f633c2351c374/rev-0/w-620/f-jpg/s-1d241b211e3c155b40e522e97f9565e8a48b8db9.jpg",
+          mp4Link:"https://s9.gelsistirire.top/d/yinjufkosk3rtzj5alwrbs4ac2pgwbbq46gb46wiqwrizcotzskjvfp2cxcbajrd5t6rupe2/Guardians%20of%20the%20Galaxy%202014%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:59,
+          isim:"Galaksinin Koruyucuları 2",
+          altMetin:"guardians of the galaxy volume 2",
+          tur:"Aksiyon",
+          kapak:"https://upload.wikimedia.org/wikipedia/tr/6/6f/Galaksinin_Koruyucular%C4%B1_2.jpg?utm_source=tr.wikipedia.org&utm_campaign=index&utm_content=original",
+          mp4Link:"https://s9.gelsistirire.top/d/yinmbdspsk3rtzj5c7wrvq6rktmallr47fqup5ud6ybr5e2ohhzhel3qyp3jdfxfzffne7n5/Guardians%20of%20the%20Galaxy%20Vol%202%202017%20Bluray%201080p%20DUAL.mp4"
+        },
+        {
+          id:60,
+          isim:"Galaksinin Koruyucuları 3",
+          altMetin:"guardians of the galaxy volume 3",
+          tur:"Aksiyon",
+          kapak:"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQOXV6MUg8YRpeNDZzbAvvFQePgdXg86_KTLANEX-wvotCGBurG5SP7Wiw&s=10",
+          mp4Link:"https://s9.gelsistirire.top/d/yinaskcpsk3rtzj5b7wqfg6viq665jbiaesc5zk2iwobp5u3eri4pjdczdfw6hb4zqinlgoo/GuardiansoftheGalaxyVol3-BLURAY-TRDUAL%20mp4.mp4"
+        }
+    ];
+
+    let aktifTur = 'Tümü';
+
+    function kartOlustur(film) {
+        return `
+            <div class="card" onclick="filmiAc('${film.mp4Link}')">
+                <div class="poster-container">
+                    <img class="poster" src="${film.kapak}" alt="${film.isim}" onerror="this.src='https://via.placeholder.com/200x300/131720/fff?text=Afi%C5%9F+Yok'">
+                    <div class="card-overlay">
+                        <div class="play-btn-circle">▶</div>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">${film.isim}</div>
+                    <div class="card-meta">
+                        <span>${film.tur}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function ekranYukle(list) {
+        const grid = document.getElementById("filmGrid");
+        grid.innerHTML = "";
+
+        if (list.length === 0) {
+            grid.innerHTML = `<div class="no-result">Aradığınız kriterde film bulunamadı. 🎬</div>`;
+            return;
+        }
+
+        list.forEach(film => {
+            grid.innerHTML += kartOlustur(film);
+        });
+    }
+
+    function aramaYap() {
+        const query = document.getElementById("searchInput").value.toLowerCase();
+        const filtrelenmis = filmler.filter(f => {
+            // İsmi veya varsa altMetin'i kontrol et
+            const isimElesiyor = f.isim.toLowerCase().includes(query);
+            const altMetinElesiyor = f.altMetin ? f.altMetin.toLowerCase().includes(query) : false;
+
+            const aramaUygun = isimElesiyor || altMetinElesiyor;
+            const turUygun = (aktifTur === 'Tümü') || (f.tur === aktifTur);
+
+            return aramaUygun && turUygun;
+        });
+        ekranYukle(filtrelenmis);
+    }
+
+    function turFiltrele(tur, element) {
+        aktifTur = tur;
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+
+        document.getElementById("sectionTitle").innerText = tur === 'Tümü' ? 'Tüm Filmler' : `${tur} Filmleri`;
+
+        aramaYap();
+    }
+
+    async function filmiAc(link) {
+        const modal = document.getElementById("videoModal");
+        const container = document.getElementById("playerContainer");
+
+        container.innerHTML = `
+            <vm-player id="vimePlayer" autoplay>
+                <vm-video id="vimeVideo" preload="auto">
+                    <source src="${link}" type="video/mp4" />
+                </vm-video>
+                <vm-default-ui></vm-default-ui>
+            </vm-player>
+        `;
+
+        modal.style.display = "flex";
+
+        const player = document.getElementById("vimePlayer");
+        await customElements.whenDefined('vm-player');
+
+        setTimeout(() => {
+            if (player && player.play) {
+                player.play().catch(e => console.log("Oynatma başlatılamadı:", e));
+            }
+        }, 200);
+    }
+
+    function videoKapat() {
+        const modal = document.getElementById("videoModal");
+        const container = document.getElementById("playerContainer");
+
+        container.innerHTML = "";
+        modal.style.display = "none";
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') videoKapat();
+    });
+
+    ekranYukle(filmler);
+    </script>
+</body>
+</html>
